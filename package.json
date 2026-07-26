@@ -1,0 +1,19 @@
+{
+  "name": "web-to-apk-backend",
+  "version": "1.0.0",
+  "description": "Máy chủ build APK thật từ website, dùng Bubblewrap (Google) để tạo TWA APK có chữ ký hợp lệ.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
