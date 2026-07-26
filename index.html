@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web to APK — Đóng gói website thành ứng dụng Android</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --surface:#f6f8f7;
+    --surface-2:#eef2f0;
+    --ink:#11181a;
+    --ink-soft:#546461;
+    --line:#e2e8e5;
+    --accent:#146356;
+    --accent-strong:#0d453c;
+    --accent-soft:#e3f1ec;
+    --warn:#a85a12;
+    --error:#c23b2b;
+    --ok:#146356;
+    --radius:14px;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 32px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:20;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:-.02em;}
+  .brand svg{flex-shrink:0;}
+  .brand .tag{
+    font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);padding:3px 8px;border-radius:20px;letter-spacing:.02em;
+  }
+  .status-pill{
+    font-family:var(--mono);font-size:12px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:#9aa8a4;}
+  .dot.live{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+
+  .shell{
+    max-width:1240px;margin:0 auto;padding:40px 32px 100px;
+    display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:start;
+  }
+  @media (max-width:960px){ .shell{grid-template-columns:1fr; padding:24px 18px 80px;} }
+
+  h1.hero{font-size:34px;line-height:1.15;letter-spacing:-.03em;margin:0 0 8px;font-weight:800;}
+  p.sub{color:var(--ink-soft);font-size:15px;margin:0 0 32px;max-width:52ch;line-height:1.5;}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px;margin-bottom:20px;
+  }
+  .card h2{
+    font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-strong);
+    font-family:var(--mono);font-weight:600;margin:0 0 18px;display:flex;align-items:center;gap:8px;
+  }
+  .card h2::before{content:"";width:16px;height:1px;background:var(--accent);}
+
+  .field{margin-bottom:18px;}
+  .field:last-child{margin-bottom:0;}
+  label{display:block;font-size:13.5px;font-weight:600;margin-bottom:5px;}
+  label .req{color:var(--error);margin-left:2px;}
+  .hint{font-size:12.5px;color:var(--ink-soft);margin-top:5px;line-height:1.4;}
+  input[type=text], input[type=url]{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
+    font-family:var(--sans);font-size:14.5px;background:#fff;color:var(--ink);
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  input.error{border-color:var(--error);}
+  .err-msg{font-size:12.5px;color:var(--error);margin-top:5px;display:none;font-weight:500;}
+  .err-msg.show{display:block;}
+
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:560px){.row2{grid-template-columns:1fr;}}
+
+  .icon-drop{
+    display:flex;align-items:center;gap:16px;padding:14px;border:1.5px dashed var(--line);
+    border-radius:11px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s;
+  }
+  .icon-drop:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .icon-drop input{display:none;}
+  .icon-preview{
+    width:56px;height:56px;border-radius:13px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;border:1px solid var(--line);
+  }
+  .icon-preview img{width:100%;height:100%;object-fit:cover;}
+  .icon-drop-text strong{display:block;font-size:13.5px;}
+  .icon-drop-text span{font-size:12px;color:var(--ink-soft);}
+
+  fieldset{border:none;padding:0;margin:0;}
+  .seg{display:flex;gap:8px;flex-wrap:wrap;}
+  .seg label{
+    display:flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid var(--line);
+    border-radius:9px;font-size:13.5px;font-weight:500;background:#fff;cursor:pointer;margin:0;
+    transition:all .15s;
+  }
+  .seg input{accent-color:var(--accent);margin:0;}
+  .seg label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong);}
+
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);}
+  .toggle-row:first-child{border-top:none;padding-top:0;}
+  .toggle-row .t-label strong{display:block;font-size:13.5px;}
+  .toggle-row .t-label span{font-size:12px;color:var(--ink-soft);}
+  .switch{position:relative;width:40px;height:23px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#d5dcda;border-radius:20px;cursor:pointer;transition:.15s;}
+  .slider::before{content:"";position:absolute;width:17px;height:17px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider::before{transform:translateX(17px);}
+
+  .colorfield{display:flex;align-items:center;gap:10px;}
+  input[type=color]{width:42px;height:38px;border:1px solid var(--line);border-radius:8px;padding:2px;cursor:pointer;background:#fff;}
+  .colorfield input[type=text]{font-family:var(--mono);font-size:13px;}
+
+  .perm-list label{
+    display:flex;align-items:flex-start;gap:10px;padding:10px 0;font-weight:500;font-size:13.5px;cursor:pointer;
+  }
+  .perm-list label span.d{display:block;font-weight:400;color:var(--ink-soft);font-size:12px;margin-top:2px;}
+  .perm-list input{margin-top:3px;accent-color:var(--accent);}
+
+  .actions{display:flex;gap:12px;margin-top:8px;}
+  .btn{
+    font-family:var(--sans);font-weight:700;font-size:15px;border:none;border-radius:11px;
+    padding:15px 22px;cursor:pointer;transition:transform .08s, box-shadow .15s, background .15s;
+    display:flex;align-items:center;justify-content:center;gap:9px;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{
+    background:var(--accent);color:#fff;flex:1;box-shadow:0 1px 2px rgba(13,69,60,.15);
+  }
+  .btn-primary:hover{background:var(--accent-strong);}
+  .btn-primary:disabled{background:#b9c4c0;cursor:not-allowed;}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  /* Right column */
+  .sticky{position:sticky;top:96px;}
+  .phone-wrap{display:flex;justify-content:center;padding:26px 0 10px;}
+  .phone{
+    width:220px;height:452px;border-radius:34px;background:#0d1314;padding:9px;
+    box-shadow:0 20px 40px -14px rgba(13,20,19,.35);position:relative;
+  }
+  .phone .screen{
+    width:100%;height:100%;border-radius:26px;background:#fff;overflow:hidden;position:relative;
+    display:flex;flex-direction:column;
+  }
+  .phone .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);width:70px;height:18px;
+    background:#0d1314;border-bottom-left-radius:10px;border-bottom-right-radius:10px;z-index:3;
+  }
+  .phone .toolbar{height:26px;transition:background .2s;}
+  .phone .content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:background .2s;}
+  .phone .app-icon{
+    width:60px;height:60px;border-radius:16px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    box-shadow:0 6px 14px -6px rgba(0,0,0,.25);
+  }
+  .phone .app-icon img{width:100%;height:100%;object-fit:cover;}
+  .phone .app-name{font-size:11px;font-weight:600;color:#1d2624;text-align:center;padding:0 10px;}
+  .phone .home-url{font-family:var(--mono);font-size:8.5px;color:#94a29e;text-align:center;padding:0 14px;word-break:break-all;}
+
+  .console{
+    background:#0d1417;border-radius:var(--radius);padding:0;overflow:hidden;border:1px solid #1c2528;margin-top:22px;
+  }
+  .console-head{
+    display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+    border-bottom:1px solid #1c2528;
+  }
+  .console-head .dots{display:flex;gap:6px;}
+  .console-head .dots span{width:9px;height:9px;border-radius:50%;background:#2a3538;}
+  .console-title{font-family:var(--mono);font-size:11.5px;color:#7f9490;letter-spacing:.03em;}
+  .console-body{
+    font-family:var(--mono);font-size:12px;line-height:1.7;color:#a9bab5;padding:14px 16px;
+    height:190px;overflow-y:auto;
+  }
+  .console-body .l{white-space:pre-wrap;word-break:break-word;}
+  .console-body .l.ok{color:#59c99a;}
+  .console-body .l.warn{color:#e0a85a;}
+  .console-body .l.err{color:#f0776a;}
+  .console-body::-webkit-scrollbar{width:8px;}
+  .console-body::-webkit-scrollbar-thumb{background:#26332f;border-radius:8px;}
+
+  .stages{display:flex;gap:6px;margin-top:14px;}
+  .stage{
+    flex:1;text-align:center;padding:8px 4px;border-radius:8px;background:var(--surface-2);
+    font-size:11px;font-family:var(--mono);color:var(--ink-soft);font-weight:600;border:1px solid transparent;
+    transition:.2s;
+  }
+  .stage.active{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent);}
+  .stage.done{background:var(--accent);color:#fff;}
+
+  .result-card{
+    border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--radius);
+    padding:24px;margin-top:20px;display:none;
+  }
+  .result-card.show{display:block;}
+  .result-card h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .result-card .meta{font-family:var(--mono);font-size:12.5px;color:var(--accent-strong);margin:12px 0 16px;line-height:1.9;}
+  .result-card .meta b{color:var(--ink);}
+  .btn-download{
+    width:100%;background:var(--accent-strong);color:#fff;padding:14px;border-radius:10px;
+    border:none;font-weight:700;font-size:14.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-download:hover{background:#08332c;}
+
+  .banner{
+    display:none;border-radius:11px;padding:13px 16px;font-size:13.5px;margin-bottom:20px;
+    align-items:flex-start;gap:10px;line-height:1.5;
+  }
+  .banner.show{display:flex;}
+  .banner.error{background:#fdecea;color:var(--error);border:1px solid #f4c3bd;}
+  .banner.info{background:var(--accent-soft);color:var(--accent-strong);border:1px solid #bfe0d4;}
+
+  footer{max-width:1240px;margin:0 auto;padding:0 32px 40px;color:var(--ink-soft);font-size:12.5px;}
+  footer a{color:var(--accent-strong);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3" stroke="#146356" stroke-width="1.6"/><path d="M8 4V2M16 4V2" stroke="#146356" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="3" stroke="#146356" stroke-width="1.6"/></svg>
+    Web&nbsp;→&nbsp;APK <span class="tag">TWA REAL BUILD</span>
+  </div>
+  <div class="status-pill"><span class="dot" id="serverDot"></span><span id="serverStatus">Đang kiểm tra máy chủ build…</span></div>
+</div>
+
+<div class="shell">
+  <div class="left">
+    <h1 class="hero">Đóng gói website thành ứng dụng Android thật.</h1>
+    <p class="sub">Nhập thông tin, tải icon, và công cụ sẽ gọi máy chủ build thật (dùng Bubblewrap của Google) để tạo ra một tệp APK có chữ ký hợp lệ, cài đặt được trên Android 8.0 trở lên.</p>
+
+    <div class="banner error" id="errBanner"></div>
+    <div class="banner info show" id="infoBanner">
+      Công cụ này cần một <b>máy chủ build</b> chạy thật (Node.js + Bubblewrap + Android SDK) ở phía sau. Xem file <code>README.md</code> đi kèm để khởi động máy chủ trước khi dùng.
+    </div>
+
+    <form id="apkForm" novalidate>
+      <div class="card">
+        <h2>Thông tin ứng dụng</h2>
+        <div class="field">
+          <label for="appName">Tên ứng dụng<span class="req">*</span></label>
+          <input type="text" id="appName" placeholder="DemoApp, MyTool…" maxlength="50">
+          <div class="hint">Tên hiển thị dưới biểu tượng trên màn hình điện thoại.</div>
+          <div class="err-msg" id="err-appName">Vui lòng nhập tên ứng dụng.</div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="appVersion">Phiên bản ứng dụng</label>
+            <input type="text" id="appVersion" placeholder="1.0.0">
+            <div class="hint">Bỏ trống sẽ tự dùng 1.0.0</div>
+          </div>
+          <div class="field">
+            <label for="packageId">Tên gói ứng dụng</label>
+            <input type="text" id="packageId" placeholder="com.tenmien.app">
+            <div class="hint">Bỏ trống sẽ tự gợi ý theo URL</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="siteUrl">Đường liên kết gốc (URL)<span class="req">*</span></label>
+          <input type="url" id="siteUrl" placeholder="https://example.com">
+          <div class="hint">Trang web sẽ được đóng gói thành ứng dụng — sẽ mở đúng nội dung này khi chạy app.</div>
+          <div class="err-msg" id="err-siteUrl">Vui lòng nhập URL hợp lệ, bắt đầu bằng http:// hoặc https://</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Biểu tượng ứng dụng</h2>
+        <label class="icon-drop" for="iconInput">
+          <div class="icon-preview" id="iconPreview">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#9aa8a4" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <div class="icon-drop-text">
+            <strong>Chọn ảnh biểu tượng (PNG/JPG)</strong>
+            <span>Khuyến nghị 512×512px, nền trong suốt cho PNG</span>
+          </div>
+          <input type="file" id="iconInput" accept="image/png,image/jpeg">
+        </label>
+        <div class="err-msg" id="err-icon">Vui lòng chọn ảnh biểu tượng.</div>
+      </div>
+
+      <div class="card">
+        <h2>Tùy chọn nâng cao</h2>
+        <div class="field">
+          <label>Hướng màn hình</label>
+          <div class="seg">
+            <label><input type="radio" name="orientation" value="portrait" checked> Dọc</label>
+            <label><input type="radio" name="orientation" value="landscape"> Ngang</label>
+            <label><input type="radio" name="orientation" value="any"> Tự động</label>
+          </div>
+        </div>
+        <div class="row2" style="margin-top:18px;">
+          <div class="field">
+            <label for="themeColor">Màu chủ đạo</label>
+            <div class="colorfield">
+              <input type="color" id="themeColor" value="#146356">
+              <input type="text" id="themeColorHex" value="#146356" maxlength="7">
+            </div>
+          </div>
+          <div class="field">
+            <label for="toolbarColor">Màu thanh công cụ</label>
+            <div class="colorfield">
+              <input type="color" id="toolbarColor" value="#146356">
+              <input type="text" id="toolbarColorHex" value="#146356" maxlength="7">
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+          <div class="toggle-row">
+            <div class="t-label"><strong>Chế độ toàn màn hình</strong><span>Ẩn thanh trạng thái hệ thống khi mở app</span></div>
+            <label class="switch"><input type="checkbox" id="fullscreen"><span class="slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Quyền ứng dụng cần dùng</h2>
+        <div class="perm-list">
+          <label><input type="checkbox" checked disabled> Internet<span class="d">Bắt buộc để tải nội dung website — luôn bật</span></label>
+          <label><input type="checkbox" id="permStorage"> Lưu trữ<span class="d">Cho phép tải file / lưu dữ liệu từ trang web</span></label>
+          <label><input type="checkbox" id="permVibrate"> Độ rung<span class="d">Cho phép trang web kích hoạt rung phản hồi</span></label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="buildBtn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          TẠO ỨNG DỤNG APK
+        </button>
+        <button type="button" class="btn btn-ghost" id="resetBtn">Đặt lại</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="right sticky">
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <div class="toolbar" id="pvToolbar" style="background:#146356;"></div>
+          <div class="content" id="pvContent">
+            <div class="app-icon" id="pvIcon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#c3ccc9" stroke-width="1.5"/></svg>
+            </div>
+            <div class="app-name" id="pvName">Tên ứng dụng</div>
+            <div class="home-url" id="pvUrl">https://…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stages" id="stages">
+      <div class="stage" data-stage="prep">Đang xử lý</div>
+      <div class="stage" data-stage="pack">Đang đóng gói</div>
+      <div class="stage" data-stage="done">Hoàn tất</div>
+    </div>
+
+    <div class="console">
+      <div class="console-head">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="console-title">build.log</div>
+      </div>
+      <div class="console-body" id="consoleBody">
+        <div class="l">Đang chờ bắt đầu…</div>
+      </div>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <h3>✅ Tạo ứng dụng thành công</h3>
+      <div class="meta" id="resultMeta"></div>
+      <button class="btn-download" id="downloadBtn">📥 TẢI XUỐNG TỆP APK</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Công cụ gọi máy chủ build thật (Bubblewrap / Android SDK) — không có bước nào được mô phỏng. Xem <a href="README.md">README.md</a> để cài đặt máy chủ.
+</footer>
+
+<script>
+const API_BASE = window.API_BASE || 'http://localhost:3000';
+
+const el = id => document.getElementById(id);
+const iconInput = el('iconInput');
+let iconFile = null;
+
+// live preview bindings
+function syncPreview(){
+  el('pvName').textContent = el('appName').value.trim() || 'Tên ứng dụng';
+  el('pvUrl').textContent = el('siteUrl').value.trim() || 'https://…';
+  const theme = el('themeColorHex').value || '#146356';
+  el('pvToolbar').style.background = theme;
+}
+['appName','siteUrl'].forEach(id => el(id).addEventListener('input', syncPreview));
+
+// color pickers sync with hex text fields
+function bindColor(colorId, hexId){
+  el(colorId).addEventListener('input', e => { el(hexId).value = e.target.value; syncPreview(); });
+  el(hexId).addEventListener('input', e => {
+    if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)){ el(colorId).value = e.target.value; syncPreview(); }
+  });
+}
+bindColor('themeColor','themeColorHex');
+bindColor('toolbarColor','toolbarColorHex');
+
+// icon upload + preview
+iconInput.addEventListener('change', () => {
+  const f = iconInput.files[0];
+  if(!f) return;
+  iconFile = f;
+  const reader = new FileReader();
+  reader.onload = e => {
+    el('iconPreview').innerHTML = `<img src="${e.target.result}" alt="icon preview">`;
+    el('pvIcon').innerHTML = `<img src="${e.target.result}" alt="">`;
+  };
+  reader.readAsDataURL(f);
+  el('err-icon').classList.remove('show');
+});
+
+// package id auto-suggest from URL
+el('siteUrl').addEventListener('blur', () => {
+  if(el('packageId').value.trim()) return;
+  try{
+    const u = new URL(el('siteUrl').value.trim());
+    const parts = u.hostname.replace(/^www\./,'').split('.').filter(Boolean).reverse();
+    if(parts.length){ el('packageId').placeholder = parts.join('.') + '.app'; }
+  }catch(e){ /* invalid url, ignore */ }
+});
+
+function validateUrl(v){
+  try{ const u = new URL(v); return u.protocol === 'http:' || u.protocol === 'https:'; }
+  catch(e){ return false; }
+}
+
+function setStage(name){
+  document.querySelectorAll('.stage').forEach(s => {
+    s.classList.remove('active','done');
+    const order = ['prep','pack','done'];
+    if(order.indexOf(s.dataset.stage) < order.indexOf(name)) s.classList.add('done');
+    if(s.dataset.stage === name) s.classList.add('active');
+  });
+}
+
+function logLine(text, cls){
+  const body = el('consoleBody');
+  const line = document.createElement('div');
+  line.className = 'l' + (cls ? ' ' + cls : '');
+  line.textContent = text;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function showError(msg){
+  el('errBanner').textContent = msg;
+  el('errBanner').classList.add('show');
+}
+function clearError(){ el('errBanner').classList.remove('show'); }
+
+// server health check
+async function checkServer(){
+  try{
+    const r = await fetch(API_BASE + '/api/health');
+    if(!r.ok) throw new Error();
+    el('serverDot').classList.add('live');
+    el('serverStatus').textContent = 'Máy chủ build đã sẵn sàng';
+  }catch(e){
+    el('serverDot').classList.remove('live');
+    el('serverStatus').textContent = 'Chưa kết nối được máy chủ build (xem README.md)';
+  }
+}
+checkServer();
+setInterval(checkServer, 8000);
+
+el('apkForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearError();
+  let ok = true;
+  const name = el('appName').value.trim();
+  const url = el('siteUrl').value.trim();
+
+  el('appName').classList.remove('error'); el('err-appName').classList.remove('show');
+  el('siteUrl').classList.remove('error'); el('err-siteUrl').classList.remove('show');
+  el('err-icon').classList.remove('show');
+
+  if(!name){ el('appName').classList.add('error'); el('err-appName').classList.add('show'); ok = false; }
+  if(!url || !validateUrl(url)){ el('siteUrl').classList.add('error'); el('err-siteUrl').classList.add('show'); ok = false; }
+  if(!iconFile){ el('err-icon').classList.add('show'); ok = false; }
+  if(!ok) return;
+
+  const fd = new FormData();
+  fd.append('icon', iconFile);
+  fd.append('appName', name);
+  fd.append('appVersion', el('appVersion').value.trim() || '1.0.0');
+  fd.append('packageId', el('packageId').value.trim() || el('packageId').placeholder || '');
+  fd.append('siteUrl', url);
+  fd.append('orientation', document.querySelector('input[name=orientation]:checked').value);
+  fd.append('themeColor', el('themeColorHex').value);
+  fd.append('toolbarColor', el('toolbarColorHex').value);
+  fd.append('fullscreen', el('fullscreen').checked);
+  fd.append('permStorage', el('permStorage').checked);
+  fd.append('permVibrate', el('permVibrate').checked);
+
+  el('buildBtn').disabled = true;
+  el('buildBtn').textContent = 'Đang gửi yêu cầu…';
+  el('resultCard').classList.remove('show');
+  el('consoleBody').innerHTML = '';
+  setStage('prep');
+  logLine('Đang tải icon và thông tin lên máy chủ build…');
+
+  let jobId;
+  try{
+    const res = await fetch(API_BASE + '/api/build', { method: 'POST', body: fd });
+    if(!res.ok){
+      const data = await res.json().catch(()=>({}));
+      throw new Error(data.error || 'Máy chủ build từ chối yêu cầu.');
+    }
+    const data = await res.json();
+    jobId = data.jobId;
+  }catch(err){
+    showError('Không thể kết nối máy chủ build: ' + err.message + ' — kiểm tra server backend đã chạy chưa (xem README.md).');
+    el('buildBtn').disabled = false;
+    el('buildBtn').textContent = 'TẠO ỨNG DỤNG APK';
+    return;
+  }
+
+  el('buildBtn').textContent = 'Đang đóng gói…';
+  setStage('pack');
+
+  const es = new EventSource(`${API_BASE}/api/build/${jobId}/events`);
+  es.onmessage = (ev) => {
+    const data = JSON.parse(ev.data);
+    if(data.line) logLine(data.line, data.level);
+    if(data.stage) setStage(data.stage);
+    if(data.status === 'success'){
+      es.close();
+      setStage('done');
+      el('buildBtn').disabled = false;
+      el('buildBtn').textContent = 'TẠO ỨNG DỤNG APK';
+      el('resultMeta').innerHTML =
+        `Tên tệp: <b>${data.fileName}</b><br>Kích thước: <b>${data.sizeMb} MB</b><br>Gói: <b>${data.packageId}</b><br>Phiên bản: <b>${data.version}</b>`;
+      el('resultCard').classList.add('show');
+      el('downloadBtn').onclick = () => {
+        window.location.href = `${API_BASE}/api/build/${jobId}/download`;
+      };
+    }
+    if(data.status === 'error'){
+      es.close();
+      el('buildBtn').disabled = false;
+      el('buildBtn').textContent = 'TẠO ỨNG DỤNG APK';
+      showError('Build thất bại: ' + data.message);
+    }
+  };
+  es.onerror = () => {
+    logLine('Mất kết nối luồng log tới máy chủ build.', 'err');
+  };
+});
+
+el('resetBtn').addEventListener('click', () => {
+  el('apkForm').reset();
+  iconFile = null;
+  el('iconPreview').innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#9aa8a4" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  el('pvIcon').innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" stroke="#c3ccc9" stroke-width="1.5"/></svg>`;
+  el('resultCard').classList.remove('show');
+  el('consoleBody').innerHTML = '<div class="l">Đang chờ bắt đầu…</div>';
+  setStage('');
+  clearError();
+  syncPreview();
+});
+
+syncPreview();
+</script>
+</body>
+</html>
