@@ -1,19 +1,32 @@
 {
-  "name": "web-to-apk-backend",
-  "version": "1.0.0",
-  "description": "Máy chủ build APK thật từ website, dùng Bubblewrap (Google) để tạo TWA APK có chữ ký hợp lệ.",
-  "main": "server.js",
-  "type": "commonjs",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1",
-    "uuid": "^9.0.1"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "name": "Ứng Dụng Của Tôi",
+  "short_name": "Ứng Dụng",
+  "description": "Mô tả ngắn gọn về ứng dụng của bạn",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a73e8",
+  "theme_color": "#1a73e8",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
